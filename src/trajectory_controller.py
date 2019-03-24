@@ -21,7 +21,7 @@ class Controller:
         self.Kp = 1 * np.eye(3)
         self.Kd = 1 * np.eye(3)
 
-        self.k = 0.2 # Damped pseudo-inverse
+        self.k = 0.2 # Damped pseudo-inverse factor
         self.q = np.zeros((4, 1))
 
         self.x_d = self.fkm(self.q)
@@ -121,6 +121,23 @@ class Controller:
         pinv_jacobian = np.dot(np.transpose(jacobian), np.linalg.inv(np.dot(jacobian,np.transpose(jacobian)) + (self.k**2)*np.eye(3)))
         return pinv_jacobian
 
+    def computeSecondaryTaskTerm(self):
+        # In general, all joint can move in the interval [-pi, pi]
+        q_min = -np.pi * np.ones(4)
+        q_max = np.pi * np.ones(4)
+        # Except for the third Joint which will work in [-pi/2, pi/2]
+        q_min[2] = -np.pi/2
+        q_max[2] = np.pi/2
+        n = 4
+        gain = 1
+
+        result = np.zeros((4,1))
+
+        for i in range(0, len(result)):
+            result[i] = - gain * (1.0/(n * (q_max[i] - q_min[i])**2))
+
+        return result
+
 controller = Controller()
 Ts = 0.01
 d_q = np.zeros((4, 1))
@@ -133,9 +150,15 @@ while not rospy.is_shutdown():
     error = controller.x_d - controller.fkm(controller.q)
     d_error = controller.d_x_d - np.dot(controller.jacobian(controller.q), d_q)
 
-    dd_q = np.dot(controller.pinv(controller.jacobian(controller.q)), \
+    jacobian = controller.jacobian(controller.q)
+    jacobian_pinv = controller.pinv(jacobian)
+
+    dd_q_0 = controller.computeSecondaryTaskTerm()
+
+    dd_q = np.dot(jacobian_pinv, \
                     controller.dd_x_d + np.dot(controller.Kd,d_error) + np.dot(controller.Kp,error) \
-                    - np.dot(controller.d_jacobian(controller.q,d_q), d_q))
+                    - np.dot(controller.d_jacobian(controller.q,d_q), d_q)) \
+                    +  np.dot((np.eye(4) - np.dot(jacobian_pinv, jacobian)), dd_q_0)
     d_q += dd_q*Ts
     q = controller.q + d_q*Ts
 
