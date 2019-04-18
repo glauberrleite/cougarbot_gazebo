@@ -28,7 +28,7 @@ class Controller:
         self.d_x_d = np.zeros((3, 1))
         self.dd_x_d = np.zeros((3, 1))
 
-        rospy.init_node('trajectory_controller')
+        rospy.init_node('motion_control_accelaration')
 
         self.pub = rospy.Publisher('/arm_controller/command', Float64MultiArray, queue_size=10)
 

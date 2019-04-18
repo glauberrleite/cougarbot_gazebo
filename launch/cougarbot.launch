@@ -8,5 +8,6 @@
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-param robot_description -urdf -model cougarbot" />
   <node name="controller_spawner" pkg="controller_manager" type="spawner" args="arm_controller"/>
 
-  <node name="trajectory_controller" pkg="cougarbot_gazebo" type="trajectory_controller.py" output="screen"/>
+  <!--<node name="motion_control_acceleration" pkg="cougarbot_gazebo" type="motion_control_acceleration.py" output="screen"/>-->
+  <node name="motion_control_torque" pkg="cougarbot_gazebo" type="motion_control_torque.py" output="screen"/>
 </launch>
