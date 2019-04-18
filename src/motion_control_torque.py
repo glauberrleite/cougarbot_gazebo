@@ -121,22 +121,45 @@ class Controller:
         m = 1 # All links have 1 kg
         jacob = self.jacobian(q)
 
-        jacob_l1 = np.zeros(4, 4)
+        jacob_l1 = np.zeros((3, 4))
         jacob_l1[:, 0] = jacob[:, 0]
 
-        jacob_l2 = np.zeros(4, 4)
+        jacob_l2 = np.zeros((3, 4))
         jacob_l2[:, 0:1] = jacob[:, 0:1]
 
-        jacob_l3 = np.zeros(4, 4)
+        jacob_l3 = np.zeros((3, 4))
         jacob_l3[:, 0:2] = jacob[:, 0:2]
 
-        B = m * np.dot(jacob_l1.T, jacob_l1) + m * np.dot(jacob_l2.T, jacob_l2)\
+        return m * np.dot(jacob_l1.T, jacob_l1) + m * np.dot(jacob_l2.T, jacob_l2)\
             + m * np.dot(jacob_l3.T, jacob_l3) + m * np.dot(jacob.T, jacob)
 
-        return B
-
     def n(self, q, d_q):
-        return np.zeros(4, 1)
+        C = np.zeros((4, 4))
+
+        g_0 = np.zeros((3, 1))
+        g_0[2] = 9.81
+
+        m = 1 # All links have 1 kg
+        jacob = self.jacobian(q)
+
+        jacob_l1 = np.zeros((3, 4))
+        jacob_l1[:, 0] = jacob[:, 0]
+
+        jacob_l2 = np.zeros((3, 4))
+        jacob_l2[:, 0:1] = jacob[:, 0:1]
+
+        jacob_l3 = np.zeros((3, 4))
+        jacob_l3[:, 0:2] = jacob[:, 0:2]
+
+        g = np.zeros((4, 1))
+
+        for i in range(0, 4):
+            g[i] = (m * np.dot(g_0.T, jacob_l1[:, i]) \
+                + m * np.dot(g_0.T, jacob_l2[:, i]) \
+                + m * np.dot(g_0.T, jacob_l3[:, i]) \
+                + m * np.dot(g_0.T, jacob[:, i]))
+
+        return np.dot(C, d_q) + g
 
     def pinv(self, jacobian):
         pinv_jacobian = np.dot(np.transpose(jacobian), np.linalg.inv(np.dot(jacobian,np.transpose(jacobian)) + (self.k**2)*np.eye(3)))
@@ -149,17 +172,15 @@ dd_q = np.zeros((4, 1))
 
 while not rospy.is_shutdown():
 
-    print(controller.fkm(controller.q))
-
     error = controller.x_d - controller.fkm(controller.q)
     d_error = controller.d_x_d - np.dot(controller.jacobian(controller.q), d_q)
 
     jacobian = controller.jacobian(controller.q)
     jacobian_pinv = controller.pinv(jacobian)
 
-    B = controller.B(q)
+    B = controller.B(controller.q)
 
-    n = controller.n(q, d_q)
+    n = controller.n(controller.q, d_q)
 
     dd_q = np.dot(jacobian_pinv, \
                     controller.dd_x_d + np.dot(controller.Kd,d_error) + np.dot(controller.Kp,error) \
@@ -167,7 +188,9 @@ while not rospy.is_shutdown():
     d_q += dd_q*Ts
     q = controller.q + d_q*Ts
 
-    u = np.dot(B, q) + n
+    u = np.dot(B, dd_q) + n
+
+    print (u)
 
     # publish q
     msg = Float64MultiArray()
