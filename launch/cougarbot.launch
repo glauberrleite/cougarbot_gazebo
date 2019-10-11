@@ -9,5 +9,5 @@
   <node name="controller_spawner" pkg="controller_manager" type="spawner" args="arm_controller"/>
 
   <!--<node name="motion_control_acceleration" pkg="cougarbot_gazebo" type="motion_control_acceleration.py" output="screen"/>-->
-  <node name="motion_control_torque" pkg="cougarbot_gazebo" type="motion_control_torque.py" output="screen"/>
+  <node name="motion_control_acceleration" pkg="cougarbot_gazebo" type="motion_control_torque.py" output="screen"/>
 </launch>

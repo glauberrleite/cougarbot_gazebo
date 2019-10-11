@@ -145,7 +145,7 @@ dd_q = np.zeros((4, 1))
 
 while not rospy.is_shutdown():
 
-    print(controller.fkm(controller.q))
+    #print(controller.fkm(controller.q))
 
     error = controller.x_d - controller.fkm(controller.q)
     d_error = controller.d_x_d - np.dot(controller.jacobian(controller.q), d_q)
